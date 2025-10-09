@@ -12,6 +12,7 @@ library(limma)
 
 setwd("C:/Users/jalli/Nextcloud/Systems Bio/Scientific Programming/EndoData")
 
+
 Rdata <- read_excel("GSE141549_Non-normalized_data_GA_illumina_expression_platform_HumanHT-12.xls", col_names = FALSE, skip = 3)
 
 ExprData <- Rdata %>% select(30:ncol(.)) # only expression columns + detection pval
@@ -275,7 +276,78 @@ bootstrap_indices # indices of all 1000 possibilities of re-sampling, PE fix, No
  # create loop with analysis (PCA or DEG) to avoid memorizing all the 1000 different matrices
 
 
-# test GitHub
+## PCA without bootstrapping
+# expression matrix: expr_only_filtered_probes
+# row = samples, column = genes
+
+expr_for_pca <- t(expr_only_filtered_probes) # transposing
+pca_res <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+summary(pca_res)
+head(pca_res$x)
+
+# color coding
+# classes2 group vector for two groups
+classes2
+colors <- c("PE" = "blue", "NonPE" = "green")
+point_colors <- colors[classes2]
+
+plot(pca_res$x[,1], pca_res$x[,2],
+     xlab = "PC1", ylab = "PC2",
+     main = "PCA der Genexpressionsmatrix",
+     col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 19)
+
+# subtypes as my group vector for all subgroups --> not working for all groups
+subtypes
+group_colors <- c("DiEIn" = "red",
+                  "PE"    = "blue",
+                  "PeLB"  = "green",
+                  "PeLR"  = "orange",
+                  "PeLW"  = "purple",
+                  "PP"    = "brown",
+                  "SuL"   = "pink")
+
+point_colors2 <- group_colors[subtypes]
+
+
+plot(pca_res$x[,1], pca_res$x[,2],
+     xlab = "PC1", ylab = "PC2",
+     main = "PCA der Genexpressionsmatrix",
+     col = point_colors2, pch = 20)
+legend("topright", legend = names(group_colors), col = group_colors, pch = 19)
+text(pca_res$x[,1], pca_res$x[,2], labels = rownames(expr_for_pca), pos = 3, cex = 0.7)
 
 
 
+
+## DEG without bootstrapping
+# expression matrix: expr_only_filtered_probes
+# classes2 is already factorarized
+
+design <- model.matrix(~0 + classes2)  # keine Intercept-Spalte
+colnames(design) <- levels(classes2)
+design
+
+fit <- lmFit(expr_only_filtered_probes, design)
+fit <- eBayes(fit) # why eBayes?
+
+# sort genes with p-val
+deg <- topTable(fit, coef=2, adjust.method="BH", number=Inf)
+
+# Signifikante DEGs (z.B. adj.P.Val < 0.1 und |logFC| > 1)
+sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
+
+
+
+# visualize: Volcano Plot
+plot(deg$logFC, -log10(deg$adj.P.Val),
+     pch = 19, cex = 0.5,
+     col = ifelse(deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, "blue", "green"),
+     xlab = "log2 Fold Change", ylab = "-log10 adj. P-value")
+
+# green = not significant genes
+# vlue = significant genes
+
+# in matrix
+deg_matrix <- as.matrix(deg) # all genes
+sig_deg_matrix <- as.matrix(sig_deg) #  only significant ones
