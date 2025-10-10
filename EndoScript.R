@@ -63,7 +63,7 @@ sigf_data
 
 
 plot(sigf_thresholds,sigf_data, type = "b", ylim = c(0,100),pch=20, col = "blue", 
-     xlab = "threshold", ylab = "significant data (%)", main = "Significant data vs. thresholds" )
+     xlab = "Threshold", ylab = "Significant data (%)", main = "Threshold effect on significance")
 
 good_probes <- norm_Pvals<0.05
 table(good_probes)
@@ -73,9 +73,9 @@ table(good_probes)
 
 # visualization
 
-sigf_thresholds <- c(0.2, 0.15, 0.1, 0.08, 0.06, 0.05)
+sigf_thresholds <- c(0.2, 0.15, 0.1, 0.08, 0.06, 0.05, 0.01, 0.001)
 
-hist(norm_Pvals, breaks = 40, main = "Normalized p-values", xlab = "Scaled p-value")
+hist(norm_Pvals, breaks = 40, main = "Distribution of scaled detection scores with thresholds", xlab = "Scaled p-values")
 abline(v = sigf_thresholds, col = "blue", lwd = 2, lty = 2)
 
 #-----------------------------------------------------------------------------------------------------------------
@@ -94,6 +94,7 @@ rownames(expr_only) <- ILMN_Gene
 # visualization
 raw <- boxplot(expr_only)
 view(raw)
+
 
 #Quality Control
 sum(is.na(ExprData)) # check for NAs: none
@@ -194,10 +195,11 @@ plot(expr_only_norm)
 hist(expr_only_norm)
 
 
+# filter for probes
 # matrix with only gene expression values, vector with geneIDs
 ILMN_Gene <- row.names(expr_only_norm)
 table(ILMN_Gene)
-expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene)
+expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene) # average replicates
           # --> leaves with 24.2% of the data
 dim(expr_only_filtered_probes)
 
@@ -209,7 +211,7 @@ dim(expr_only_filtered_probes)
 #class(DataExp)
 
 
-# replicates --> how similar are they?
+# replicates --> how similar are the samples?
 # retreive sample names + add to pre-processed matrix
 sample_names <- as.character(ExprData[1,])
 sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
@@ -233,10 +235,15 @@ cor_spearman <- sapply(seq_along(rep_idx), function(i) {
 cor_spearman
 
 # visualization
-par(mfrow=c(1,2))  # 1 Reihe, 2 Spalten
-hist(cor_pearson, main="Pearson Correlation", xlim=c(0,1), col="skyblue", breaks=10)
-hist(cor_spearman, main="Spearman Correlation", xlim=c(0,1), col="salmon", breaks=10)
+par(mfrow=c(1,2),oma = c(0, 0, 3, 0))  
+hist(cor_pearson, main="Pearson Correlation", xlim=c(0,1), xlab = "Correlation coefficient", ylab = "Number of replicate pairs", 
+     col="skyblue", breaks=10)
+hist(cor_spearman, main="Spearman Correlation", xlim=c(0,1), xlab = "Correlation coefficient", ylab = "", 
+     col="yellow", breaks=10)
+title("Distribution of correlation coefficients between replicates", outer = TRUE)
 par(mfrow=c(1,1))
+par(oma = c(0, 0, 0, 0))
+
 
 
 
@@ -255,9 +262,15 @@ subtypes <- sub("\\s+Replicate$", "", subtypes)
 classes <- factor(subtypes)
 table(classes)
 
+# visualize class imbalance - all classes
+barplot(table(classes), col = "purple4", main = "Sample distribution across classes", xlab = "Classes", ylab = "Number of samples")
+
 # define classes: PE vs. the rest
 classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
 table(classes2) 
+
+barplot(table(classes2), col = "purple4", main = "Sample distribution across two classes", xlab = "Classes", ylab = "Number of samples")
+
 
 # actual bootstrapping
 set.seed(99)
@@ -281,9 +294,13 @@ bootstrap_indices # indices of all 1000 possibilities of re-sampling, PE fix, No
 # row = samples, column = genes
 
 expr_for_pca <- t(expr_only_filtered_probes) # transposing
-pca_res <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
-summary(pca_res)
-head(pca_res$x)
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
+#summary(pca_norm)
+#head(pca_norm$x)
 
 # color coding
 # classes2 group vector for two groups
@@ -291,14 +308,15 @@ classes2
 colors <- c("PE" = "blue", "NonPE" = "green")
 point_colors <- colors[classes2]
 
-plot(pca_res$x[,1], pca_res$x[,2],
-     xlab = "PC1", ylab = "PC2",
-     main = "PCA der Genexpressionsmatrix",
-     col = point_colors, pch = 20)
-legend("topright", legend = names(colors), col = colors, pch = 19)
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of gene expression in endometriosis samples", col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
 
-# subtypes as my group vector for all subgroups --> not working for all groups
-subtypes
+
+# classes as my group vector for all subgroups --> not working for all groups
+classes
 group_colors <- c("DiEIn" = "red",
                   "PE"    = "blue",
                   "PeLB"  = "green",
@@ -307,15 +325,17 @@ group_colors <- c("DiEIn" = "red",
                   "PP"    = "brown",
                   "SuL"   = "pink")
 
-point_colors2 <- group_colors[subtypes]
+point_colors2 <- group_colors[classes]
 
 
-plot(pca_res$x[,1], pca_res$x[,2],
-     xlab = "PC1", ylab = "PC2",
-     main = "PCA der Genexpressionsmatrix",
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of gene expression in endometriosis subtypes",
      col = point_colors2, pch = 20)
-legend("topright", legend = names(group_colors), col = group_colors, pch = 19)
-text(pca_res$x[,1], pca_res$x[,2], labels = rownames(expr_for_pca), pos = 3, cex = 0.7)
+
+legend("topright", legend = names(group_colors), col = group_colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+#text(pca_norm$x[,1], pca_norm$x[,2], labels = rownames(expr_for_pca), pos = 3, cex = 0.7)
 
 
 
@@ -328,11 +348,11 @@ design <- model.matrix(~0 + classes2)  # keine Intercept-Spalte
 colnames(design) <- levels(classes2)
 design
 
-fit <- lmFit(expr_only_filtered_probes, design)
-fit <- eBayes(fit) # why eBayes?
-
-# sort genes with p-val
-deg <- topTable(fit, coef=2, adjust.method="BH", number=Inf)
+fit  <- lmFit(expr_only_filtered_probes, design)
+cont <- makeContrasts(PE - NonPE, levels = design)
+fit2 <- contrasts.fit(fit, cont)
+fit2 <- eBayes(fit2)                     # Ergebnis in fit2 behalten
+deg  <- topTable(fit2, adjust.method="BH", number=Inf)
 
 # Signifikante DEGs (z.B. adj.P.Val < 0.1 und |logFC| > 1)
 sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
@@ -342,12 +362,41 @@ sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
 # visualize: Volcano Plot
 plot(deg$logFC, -log10(deg$adj.P.Val),
      pch = 19, cex = 0.5,
-     col = ifelse(deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, "blue", "green"),
-     xlab = "log2 Fold Change", ylab = "-log10 adj. P-value")
+     col = ifelse(deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, "blue", "grey"),
+     xlab = "log2 Fold Change", ylab = "-log10 adjusted p-value",
+     main = "Volcano plot of DEGs (PE vs NonPE)")
 
-# green = not significant genes
-# vlue = significant genes
+
+# grey = not significant genes
+# blue = significant genes
+
+# how many genes up- or downregulated in PE compared to NonPE
+table(sig_deg$logFC > 0)
+
 
 # in matrix
 deg_matrix <- as.matrix(deg) # all genes
 sig_deg_matrix <- as.matrix(sig_deg) #  only significant ones
+
+
+##### ------------------------------------------------------------------
+# create summary table
+fc_cutoff <- 1
+p_cutoff <- 0.1
+
+up   <- deg$adj.P.Val < p_cutoff & deg$logFC >  fc_cutoff
+down <- deg$adj.P.Val < p_cutoff & deg$logFC < -fc_cutoff
+
+# count genes
+up_count   <- sum(up)
+down_count <- sum(down)
+total_sig  <- up_count + down_count
+total_genes <- nrow(deg)
+
+# create table
+summary_deg <- data.frame(
+  Category = c("Upregulated in PE", "Downregulated in PE", "Total DEGs", "Total genes tested"),
+  Count = c(up_count, down_count, total_sig, total_genes)
+)
+
+print(summary_deg)

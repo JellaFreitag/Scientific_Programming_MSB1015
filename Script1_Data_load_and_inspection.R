@@ -126,8 +126,9 @@ hc <- hclust(distMat)
 plot(hc, main="Hierarchical clustering of samples - raw data", sub = "", xlab = "")
 
 ## --> color-code dendrogram would be nice..
-## --> but no ouliers
+## --> but no outliers
 
+# check expression distribution across samples before! processing
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",
         ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
 
