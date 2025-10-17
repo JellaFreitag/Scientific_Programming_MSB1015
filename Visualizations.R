@@ -108,6 +108,8 @@ plot(deg$logFC, -log10(deg$adj.P.Val),
      xlab = "log2 Fold Change", ylab = "-log10 adjusted p-value",
      main = "Volcano plot of DEGs (PE vs NonPE)")
 
-
+# significance cutoff lines
+abline(h = -log10(0.1), col = "magenta", lty = 2)      # horizontal line for adj.P.Val < 0.1
+abline(v = c(-1, 1), col = "magenta", lty = 2)   # vertical lines for log2FC thresholds
 
 

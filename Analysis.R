@@ -1,6 +1,6 @@
 
 
-### Analysis without bootstrapping
+### Analysis
 
 ## PCA
 # expression matrix: expr_only_filtered_probes
@@ -19,8 +19,13 @@ pc2_var
 #head(pca_norm$x
 
 
+subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
+subtypes <- sub("\\s+Replicate$", "", subtypes)
+classes <- factor(subtypes)
+classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
 
-## DEG without bootstrapping 
+
+## DEG 
 # expression matrix: expr_only_filtered_probes
 # classes2 is already factorarized --> PE vs NonPE
 
@@ -50,36 +55,4 @@ sig_deg_matrix <- as.matrix(sig_deg) #  only significant genes
 # setwd("")
 write.csv(deg_matrix, "DEG_all_genes.csv")
 write.csv(sig_deg_matrix, "DEG_significant_genes.csv")
-
-
-# ------------------------------------------------------------------------------
-
-## boostrapping
-# preparations
-sample_names <- as.character(ExprData[1,])
-sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
-
-subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
-subtypes <- sub("\\s+Replicate$", "", subtypes)
-classes <- factor(subtypes)
-
-# define classes: PE vs. the rest
-classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
-
-# actual bootstrapping
-set.seed(99)
-
-n_boot <- 1000
-pe_idx <- which(classes2 == "PE")
-nonpe_idx <- which(classes2 == "NonPE")
-
-bootstrap_indices <- lapply(1:n_boot, function(i) {
-  sample(nonpe_idx, length(nonpe_idx), replace = TRUE)  # 30 Non-PE, resampled
-})
-bootstrap_indices # indices of all 1000 possibilities of re-sampling, PE fix, NonPE flex
-
-
-
-## analysis with bootstrapping ??
-# create loop with analysis (PCA or DEG) to avoid memorizing all the 1000 different matrices
 

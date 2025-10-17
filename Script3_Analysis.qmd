@@ -1,0 +1,24 @@
+---
+title: "Script 3: Analysis"
+format: html
+editor: visual
+---
+
+## Analysis
+
+### PCA
+
+```{r}
+# expression matrix: expr_only_filtered_probes
+# row = samples, column = genes
+
+expr_for_pca <- t(expr_only_filtered_probes) # transposing
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
+
+pc1_var
+pc2_var
+```
