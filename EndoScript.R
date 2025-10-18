@@ -156,6 +156,7 @@ Det_p_matrix <- ExprData %>% select(seq(2,ncol(.), by = 2)) %>% slice(-1) %>% sa
 Det_p_matrix <- as.data.frame(Det_p_matrix)
 p_vals_only <- Det_p_matrix %>% mutate(across(.cols = seq(1, ncol(.)), .fns = scale_Pvals))
 
+norm_Pvals <- as.data.frame(norm_Pvals)
 
 ### decide for threshold:
 # logical matrix for each p-value; rowMeans counts all TRUE (1) and FALSE (0) per row together and gives back the mean
@@ -272,17 +273,6 @@ table(classes2)
 barplot(table(classes2), col = "purple4", main = "Sample distribution across two classes", xlab = "Classes", ylab = "Number of samples")
 
 
-# actual bootstrapping
-set.seed(99)
-
-n_boot <- 1000
-pe_idx <- which(classes2 == "PE")
-nonpe_idx <- which(classes2 == "NonPE")
-
-bootstrap_indices <- lapply(1:n_boot, function(i) {
-  sample(nonpe_idx, length(nonpe_idx), replace = TRUE)  # 30 Non-PE, resampled
-})
-bootstrap_indices # indices of all 1000 possibilities of re-sampling, PE fix, NonPE flex
 
 
 ######################################### Analysis ##################################
@@ -400,3 +390,34 @@ summary_deg <- data.frame(
 )
 
 print(summary_deg)
+
+
+
+## add PCA of only sign DEGs
+
+sig_deg <- as.matrix(sig_deg)
+
+expr_for_pca <- t(sig_deg) # transposing
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
+
+classes2
+colors <- c("PE" = "blue", "NonPE" = "green")
+point_colors <- colors[classes2]
+
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of gene expression in endometriosis samples", col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+
+pca_coords <- data.frame(pca_norm$x[, 1:2], group = classes2)
+print(pca_coords)
+
+# jittering
+plot(pca_norm$x[,1] + rnorm(length(classes2), 0, 0.05),
+     pca_norm$x[,2] + rnorm(length(classes2), 0, 0.05),
+     col = point_colors, pch = 19, cex = 1.5)

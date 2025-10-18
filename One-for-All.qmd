@@ -28,33 +28,26 @@ setwd("C:/Users/jalli/Nextcloud/Systems Bio/Scientific Programming/EndoData")
 
 Rdata <- read_excel("GSE141549_Non-normalized_data_GA_illumina_expression_platform_HumanHT-12.xls", col_names = FALSE, skip = 3)
 
-ExprData <- Rdata %>% select(30:ncol(.)) # only expression columns + detection pval
+# select only expression values + detection scores
+ExprData <- Rdata %>% select(30:ncol(.))
 ```
 
 ## Exploring the data
 
-### Detection v-vals
+### Detection scores
 
 ```{r}
 # select only Detection Pval columns
 Det_p_matrix <- ExprData %>% select(seq(2,ncol(.), by = 2)) %>% slice(-1) %>% sapply(as.numeric) %>% as.matrix()
 #class(Det_p_matrix)
 dim(Det_p_matrix)
-```
 
-```{r, results='hide'}
-# how to deal with detection scores? --> scaling to common range --> what is max value?
-# 1000 largest numbers
-sort(Det_p_matrix, decreasing = TRUE)[1:1000] # only 1e+05 --> too large?? outliers?
-```
-
-```{r}
 # find max value overall
 max_p <- max(Det_p_matrix, na.rm = TRUE)
 max_p
 #class(max_p)
 
-# vectorizing for visualization: densitiy plot
+# visualization of p-val density
 det_p_vec <- as.numeric(as.vector(Det_p_matrix))
 #class(det_p_vec)
 
@@ -62,18 +55,22 @@ dens <- density(det_p_vec)
 plot(dens$x, dens$y, type = "l", main = "Density of detection scores", xlab = "Detection score", ylab = "Density")
 ```
 
-Bring detections scores to typical p-value ranges
+#### Re-scale Detection scores to p-values in range \[0,1\]
 
 ```{r}
 norm_Pvals <- Det_p_matrix/max_p
 ```
 
-Testing for different p-value thresholds.
+#### Test different p-value thresholds to retrieve amount of significant data.
 
 ```{r}
 sigf_thresholds <- c(0.2, 0.15, 0.1, 0.08, 0.06, 0.05, 0.01, 0.001)
 sigf_data <- numeric(length(sigf_thresholds))
 
+# iterate over every threshold value
+# check every p-value
+# count false and true
+# calculate percentage of significant data
 for (i in seq(sigf_thresholds)) {
   good_probes <- norm_Pvals<sigf_thresholds[i]
   num_true <- sum(good_probes)
@@ -98,7 +95,7 @@ abline(v = sigf_thresholds, col = "blue", lwd = 2, lty = 2)
 # extract expression data/remove p-values
 expr_only <- ExprData %>% select(seq(1,ncol(.), by = 2)) %>% slice(-1) %>% sapply(as.numeric) %>% as.matrix()
 
-#retreive GeneID vector
+#retreive GeneID vector and add them to expression matrix
 ILMN_Gene <- Rdata %>% select(6) %>% slice(-1)
 ILMN_Gene <- ILMN_Gene$...6
 #ILMN_Gene
@@ -113,17 +110,21 @@ rownames(expr_only) <- ILMN_Gene
 #### Quality Control
 
 ```{r}
-sum(is.na(ExprData)) # check for NAs: none
-sum(is.na(expr_only))
+# check for missing values
+sum(is.na(ExprData)) # for whole matrix
+sum(is.na(expr_only)) # only for expression values
 ```
 
 PCA on raw data
 
 ```{r}
+# retrieve sample names
 sample_names <- as.character(ExprData[1,])
 sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
 subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
 subtypes <- sub("\\s+Replicate$", "", subtypes)
+
+# define 'classes': all subtypes included
 classes <- factor(subtypes)
 classes
 group_colors <- c("DiEIn" = "red",
@@ -136,6 +137,7 @@ group_colors <- c("DiEIn" = "red",
 
 all_class_colors <- group_colors[classes]
 
+# run + plot PCA
 pca <- prcomp(t(expr_only), scale. = TRUE)
 plot(pca$x[,1], pca$x[,2], xlab = "PC1", ylab = "PC2", main="PCA of raw data", col = all_class_colors, pch = 20)
 legend("topright", legend = names(group_colors), col = group_colors, pch = 20, x.intersp = 0.6,
@@ -151,7 +153,7 @@ hc <- hclust(distMat)
 plot(hc, main="Hierarchical clustering of samples - raw data", sub = "", xlab = "")
 ```
 
-check expression distribution across samples before! processing
+Check expression distribution across samples (before processing)
 
 ```{r}
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",
@@ -160,33 +162,40 @@ boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distri
 
 ## Data filtering for significance
 
-First approach:
+#### First approach: 
+
+Detect all p-values smaller 0.05 and filter out corresponding expressetion values.
 
 ```{r, eval=FALSE, echo=TRUE, include=TRUE}
+# iterate over
+
 # expression data -> odd columns
 # p-values -> even columns
 
 ExprData_filtered <- ExprData_scaled
 
-for (i in seq(1, ncol(ExprData_scaled), by = 2)) { # loop over all expression columns
+for (i in seq(1, ncol(ExprData_scaled), by = 2)) { # iterate over all expression columns
   expression_col <- i
   p_column <- i+1
 
   x <- ExprData_scaled[[p_column]] > 0.05 # check if p-value exceeds threshold, gives logic vector
-  ExprData_filtered[[expression_col]][x] <- NA
+  ExprData_filtered[[expression_col]][x] <- NA # if yes -> set to 'NA'
   ExprData_filtered[[p_column]][x] <- NA
- }
+}
 ```
 
---\> problem here: there is a lot of missing values in the matrix, which hinders further processing and analysis.
+--\> Problem: Now, there is a lot of missing values in the matrix, which hinders further processing and analysis.
 
-Second approach: remove whole genes (rows), when fraction expression is below cutoff
+#### Second approach: 
+
+Check overall significance of genes across all samples. Remove whole rows (genes), when fraction is below cutoff.
 
 ```{r}
 # expression matrix: ExprData
+# Detection score matrix: Det_p_matrix
+# 
 
-# scale p-values into range [0,1]
-
+# function to re-scale p-values into range [0,1]
 scale_Pvals <- function(ma){
   
   ma <- as.numeric(ma)
@@ -194,102 +203,100 @@ scale_Pvals <- function(ma){
   
 }
 
-# select only Detection Pval columns
-Det_p_matrix <- ExprData %>% select(seq(2,ncol(.), by = 2)) %>% slice(-1) %>% sapply(as.numeric) %>% as.matrix()
-# scale p-value matrix
+# re-scale p-Det_p_matrix column-wise to make samples comparable
 Det_p_matrix <- as.data.frame(Det_p_matrix)
 p_vals_only <- Det_p_matrix %>% mutate(across(.cols = seq(1, ncol(.)), .fns = scale_Pvals))
 ```
 
-Decide for p-value threshold
+Set p-value threshold
 
 ```{r}
-# logical matrix for each p-value; rowMeans counts all TRUE (1) and FALSE (0) per row together 
-# gives back the mean of all the elements for each gene, for p-values below 0.1
-row_fraction <- rowMeans(p_vals_only < 0.1, na.rm = TRUE) # threshold = 0.1
+# calculates fraction of significant expression values for each gene and across samples
+# uses p < 0.1
+row_fraction <- rowMeans(p_vals_only < 0.1, na.rm = TRUE)
 #row_fraction
 ```
 
-Decide for fraction cutoff:
+Decide for fraction cutoff
 
 ```{r}
-# visual determination of best cutoff choice:
+# visual determination of best cutoff choice
 numb_genes <- length(row_fraction)
 hist(row_fraction, breaks = 100, col = "orange", main = "Distribution of gene significance using row fraction (p < 0.1)", 
      ylab = "Number of genes", xlab = "Row fraction")
 
-# mean can be used to compare with cutoff: extract the 'good' genes
+# Extract the 'good' genes --> 80% significance across samples
 good_genes <- row_fraction >= 0.8
 expr_only_filtered <- expr_only[good_genes,]
-dim(expr_only_filtered) 
+#dim(expr_only_filtered) 
 ```
 
-log2-transformation and quantile normalization
+Log2-Transformation and Quantile Normalization
 
 ```{r}
 expr_only_log2 <- log2(expr_only_filtered+1)
 expr_only_norm <- normalizeBetweenArrays(expr_only_log2, method = "quantile")
 ```
 
-Visualizations –\> create nice figure for all of them together
+Visualizations
 
-```{r}
-# non-filtered
+```{r, fig.width=12, fig.height=10, dpi=300}
+par(mfrow=c(4,2))
+
+# non-filtered expression values
 plot(expr_only)
 hist(expr_only)
 
-
-# filtered
+# filtered expression values
 plot(expr_only_filtered)
 hist(expr_only_filtered)
 
-
 # log2-transformation
-expr_only_log2 <- log2(expr_only_filtered+1)
 plot(expr_only_log2)
 hist(expr_only_log2)
 
-
-# quantile normalization using limma
-expr_only_norm <- normalizeBetweenArrays(expr_only_log2, method = "quantile")
+# normalization
 plot(expr_only_norm)
 hist(expr_only_norm)
+    
+par(mfrow=c(1,1))
+  
+
 ```
 
-filter for probes
+### Aggregate probes
+
+Probes are multiple expression representations for the same GeneID
 
 ```{r}
-# matrix with only gene expression values, vector with geneIDs
+# extract vector with GeneIDs
 ILMN_Gene <- row.names(expr_only_norm)
 #table(ILMN_Gene)
-expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene) # average replicates
+
+# average over replicates
+## limma package, using mean for aggregation
+expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene) 
 ```
 
---\> leaves with 24.2% of the data
+--\> leaves 24.20% of the total amount of data.
 
-check expression distribution again after processing
+#### Sample Replicates
 
-```{r}
-boxplot(expr_only_filtered_probes, outline = FALSE, las = 2, main = "Expression distribution per sample",
-        ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
-```
-
-Sample Replicates
+How similar are the replicates to their original sample.
 
 ```{r}
-# replicates --> how similar are the samples?
-# retreive sample names + add to pre-processed matrix
+# retreive sample names + add to filtered matrix
 sample_names <- as.character(ExprData[1,])
 sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
 
 colnames(expr_only_filtered_probes) <- sample_names
 
-# index of replicates + original
+# retrieve index of replicates + original
 rep_idx <- grep("Replicate", colnames(expr_only_filtered_probes))
 orig_idx <- rep_idx - 1 # original
 
 
-# pearson and spearman correlation
+# calulate pearson and spearman correlation
 cor_pearson <- sapply(seq_along(rep_idx), function(i) {
   cor(expr_only_filtered_probes[, orig_idx[i]], expr_only_filtered_probes[, rep_idx[i]], method = "pearson")
 })
@@ -311,18 +318,30 @@ par(mfrow=c(1,1))
 
 ```
 
-Class Imbalance
+The ranges of the Pearson and Spearman correlation coefficients are high enough to justify keeping the replicates and treating them as regular samples. They contribute to biological variance in the data and do not indicate any technical bias.
+
+#### Plot expression distribution again after processing
 
 ```{r}
+boxplot(expr_only_filtered_probes, outline = FALSE, las = 2, main = "Expression distribution per sample",
+        ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
+```
+
+#### Class Imbalance
+
+```{r}
+# retrieve sample names
 subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
 subtypes <- sub("\\s+Replicate$", "", subtypes)
+
+# create 'classes': all subtypes
 classes <- factor(subtypes)
 table(classes)
 
-# all classes
+# all subtype
 barplot(table(classes), col = "purple4", main = "Sample distribution across subtypes", xlab = "Classes", ylab = "Number of samples")
 
-# PE vs. the rest
+# reclassification in PE vs. the rest (NonPE)
 classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
 table(classes2) 
 
@@ -335,8 +354,6 @@ barplot(table(classes2), col = "purple4", main = "Sample distribution across two
 
 ```{r}
 # expression matrix: expr_only_filtered_probes
-# row = samples, column = genes
-
 expr_for_pca <- t(expr_only_filtered_probes) # transposing
 pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
 
@@ -348,15 +365,7 @@ print(paste("PC1:", pc1_var, "%", "PC2:", pc2_var, "%"))
 ```
 
 ```{r}
-#subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
-#subtypes <- sub("\\s+Replicate$", "", subtypes)
-#classes <- factor(subtypes)
-classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
-table(classes2)
-```
-
-```{r}
-# all subtypes
+# for all subtypes
 group_colors <- c("DiEIn" = "red",
                   "PE"    = "blue",
                   "PeLB"  = "green",
@@ -375,11 +384,10 @@ plot(pca_norm$x[,1], pca_norm$x[,2],
 
 legend("topright", legend = names(group_colors), col = group_colors, pch = 20, x.intersp = 0.6,
        y.intersp = 0.8, bty = "n", bg = "transparent")
-#text(pca_norm$x[,1], pca_norm$x[,2], labels = rownames(expr_for_pca), pos = 3, cex = 0.7)
 
 
 
-# PE vs. NonPE
+# for PE vs. NonPE
 colors <- c("PE" = "blue", "NonPE" = "green")
 point_colors <- colors[classes2]
 
@@ -390,23 +398,23 @@ legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0
        y.intersp = 0.8, bty = "n", bg = "transparent")
 ```
 
+The PCA plots do not show any clear clustering, suggesting that there is little overall variance between the classes.
+
 ### Differential Expressed Genes Analysis
 
 ```{r}
 # expression matrix: expr_only_filtered_probes
-# classes2 is already factorarized --> PE vs NonPE
-
-design <- model.matrix(~0 + classes2)  # keine Intercept-Spalte
+design <- model.matrix(~0 + classes2)
 colnames(design) <- levels(classes2)
 #design
 
 fit  <- lmFit(expr_only_filtered_probes, design)
 cont <- makeContrasts(PE - NonPE, levels = design)
 fit2 <- contrasts.fit(fit, cont)
-fit2 <- eBayes(fit2)                     # Ergebnis in fit2 behalten
+fit2 <- eBayes(fit2)        
 deg  <- topTable(fit2, adjust.method="BH", number=Inf)
 
-# Signifikante DEGs (z.B. adj.P.Val < 0.1 und |logFC| > 1)
+# sign. DEGs for adj.P.Val < 0.1 und |logFC| > 1
 sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
 ```
 
@@ -433,6 +441,8 @@ table(sig_deg$logFC > 0)
 ```
 
 ```{r, eval=FALSE, echo=TRUE, include=TRUE}
+# downloading the results
+
 # create matrices
 deg_matrix <- as.matrix(deg) # all genes
 sig_deg_matrix <- as.matrix(sig_deg) #  only significant genes
@@ -443,25 +453,20 @@ write.csv(deg_matrix, "DEG_all_genes.csv")
 write.csv(sig_deg_matrix, "DEG_significant_genes.csv")
 ```
 
+The differential expression analysis compared gene expression between PE and NonPE samples. Out of 1,503 genes tested, 121 showed differential expression between the two groups.\
+
+Among these, 31 genes were significantly upregulated and 90 were significantly downregulated in PE compared to NonPE.
+
+PCA again
+
 ```{r}
-# create summary table
-fc_cutoff <- 1
-p_cutoff <- 0.1
+# only use sign. genes: sig_deg
+sign_for_pca <- t(sig_deg) # transposing
+pca_norm <- prcomp(sign_for_pca, center = TRUE, scale. = TRUE)
 
-up   <- deg$adj.P.Val < p_cutoff & deg$logFC >  fc_cutoff
-down <- deg$adj.P.Val < p_cutoff & deg$logFC < -fc_cutoff
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
 
-# count genes
-up_count   <- sum(up)
-down_count <- sum(down)
-total_sig  <- up_count + down_count
-total_genes <- nrow(deg)
-
-# create table
-summary_deg <- data.frame(
-  Category = c("Upregulated in PE", "Downregulated in PE", "Total DEGs", "Total genes tested"),
-  Count = c(up_count, down_count, total_sig, total_genes)
-)
-
-print(summary_deg)
+print(paste("PC1:", pc1_var, "%", "PC2:", pc2_var, "%"))
 ```
