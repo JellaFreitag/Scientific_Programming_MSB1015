@@ -404,20 +404,15 @@ var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
 pc1_var <- round(var_explained[1], 1)
 pc2_var <- round(var_explained[2], 1)
 
-classes2
-colors <- c("PE" = "blue", "NonPE" = "green")
-point_colors <- colors[classes2]
 
 plot(pca_norm$x[,1], pca_norm$x[,2],
      xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
-     main = "PCA of gene expression in endometriosis samples", col = point_colors, pch = 20)
+     main = "PCA of significant DEGs", col = point_colors, pch = 20)
 legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
        y.intersp = 0.8, bty = "n", bg = "transparent")
 
-pca_coords <- data.frame(pca_norm$x[, 1:2], group = classes2)
-print(pca_coords)
 
 # jittering
-plot(pca_norm$x[,1] + rnorm(length(classes2), 0, 0.05),
-     pca_norm$x[,2] + rnorm(length(classes2), 0, 0.05),
-     col = point_colors, pch = 19, cex = 1.5)
+plot(pca_norm$x[,1] + rnorm(length(classes2), 0, 0.05), pca_norm$x[,2] + rnorm(length(classes2), 0, 0.05),
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of significant DEGs - jittered", col = point_colors, pch = 19, cex = 1.5)

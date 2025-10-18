@@ -1,9 +1,15 @@
-yaml
-
 ---
 title: "Script 1: Loading Data and Data Inspection"
 format: html
 ---
+
+## Characterizing subtype-specific gene expression signatures in endometriotic tissues
+
+Author: Jella Freitag (i6368892)
+
+Project submission of the individual project\
+MSB1015 - Scientific Programming\
+Submission deadline: 19.10.2025
 
 ## Setting up the script
 
@@ -28,33 +34,26 @@ setwd("C:/Users/jalli/Nextcloud/Systems Bio/Scientific Programming/EndoData")
 
 Rdata <- read_excel("GSE141549_Non-normalized_data_GA_illumina_expression_platform_HumanHT-12.xls", col_names = FALSE, skip = 3)
 
-ExprData <- Rdata %>% select(30:ncol(.)) # only expression columns + detection pval
+# select only expression values + detection scores
+ExprData <- Rdata %>% select(30:ncol(.))
 ```
 
 ## Exploring the data
 
-### Detection v-vals
+### Detection scores
 
 ```{r}
 # select only Detection Pval columns
 Det_p_matrix <- ExprData %>% select(seq(2,ncol(.), by = 2)) %>% slice(-1) %>% sapply(as.numeric) %>% as.matrix()
 #class(Det_p_matrix)
 dim(Det_p_matrix)
-```
 
-```{r, results='hide'}
-# how to deal with detection scores? --> scaling to common range --> what is max value?
-# 1000 largest numbers
-sort(Det_p_matrix, decreasing = TRUE)[1:1000] # only 1e+05 --> too large?? outliers?
-```
-
-```{r}
 # find max value overall
 max_p <- max(Det_p_matrix, na.rm = TRUE)
 max_p
 #class(max_p)
 
-# vectorizing for visualization: densitiy plot
+# visualization of p-val density
 det_p_vec <- as.numeric(as.vector(Det_p_matrix))
 #class(det_p_vec)
 
@@ -62,18 +61,22 @@ dens <- density(det_p_vec)
 plot(dens$x, dens$y, type = "l", main = "Density of detection scores", xlab = "Detection score", ylab = "Density")
 ```
 
-Bring detections scores to typical p-value ranges
+#### Re-scale Detection scores to p-values in range \[0,1\]
 
 ```{r}
 norm_Pvals <- Det_p_matrix/max_p
 ```
 
-Testing for different p-value thresholds.
+#### Test different p-value thresholds to retrieve amount of significant data
 
 ```{r}
 sigf_thresholds <- c(0.2, 0.15, 0.1, 0.08, 0.06, 0.05, 0.01, 0.001)
 sigf_data <- numeric(length(sigf_thresholds))
 
+# iterate over every threshold value
+# check every p-value
+# count false and true
+# calculate percentage of significant data
 for (i in seq(sigf_thresholds)) {
   good_probes <- norm_Pvals<sigf_thresholds[i]
   num_true <- sum(good_probes)
@@ -98,7 +101,7 @@ abline(v = sigf_thresholds, col = "blue", lwd = 2, lty = 2)
 # extract expression data/remove p-values
 expr_only <- ExprData %>% select(seq(1,ncol(.), by = 2)) %>% slice(-1) %>% sapply(as.numeric) %>% as.matrix()
 
-#retreive GeneID vector
+#retreive GeneID vector and add them to expression matrix
 ILMN_Gene <- Rdata %>% select(6) %>% slice(-1)
 ILMN_Gene <- ILMN_Gene$...6
 #ILMN_Gene
@@ -113,17 +116,21 @@ rownames(expr_only) <- ILMN_Gene
 #### Quality Control
 
 ```{r}
-sum(is.na(ExprData)) # check for NAs: none
-sum(is.na(expr_only))
+# check for missing values
+sum(is.na(ExprData)) # for whole matrix
+sum(is.na(expr_only)) # only for expression values
 ```
 
-PCA on raw data
+PCA - raw data
 
 ```{r}
+# retrieve sample names
 sample_names <- as.character(ExprData[1,])
 sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
 subtypes <- sub("SAMPLE \\d+\\s+", "", sample_names) 
 subtypes <- sub("\\s+Replicate$", "", subtypes)
+
+# define 'classes': all subtypes included
 classes <- factor(subtypes)
 classes
 group_colors <- c("DiEIn" = "red",
@@ -136,6 +143,7 @@ group_colors <- c("DiEIn" = "red",
 
 all_class_colors <- group_colors[classes]
 
+# run + plot PCA
 pca <- prcomp(t(expr_only), scale. = TRUE)
 plot(pca$x[,1], pca$x[,2], xlab = "PC1", ylab = "PC2", main="PCA of raw data", col = all_class_colors, pch = 20)
 legend("topright", legend = names(group_colors), col = group_colors, pch = 20, x.intersp = 0.6,
@@ -151,7 +159,7 @@ hc <- hclust(distMat)
 plot(hc, main="Hierarchical clustering of samples - raw data", sub = "", xlab = "")
 ```
 
-check expression distribution across samples before! processing
+Check expression distribution across samples (before normalizing)
 
 ```{r}
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",

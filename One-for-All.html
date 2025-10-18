@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>One for all</title>
+<title>Project_Script_JFreitag</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -81,7 +81,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">One for all</h1>
+<h1 class="title">Project_Script_JFreitag</h1>
 </div>
 
 
@@ -98,7 +98,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </header>
 
 
-<p>yaml</p>
+<section id="characterizing-subtype-specific-gene-expression-signatures-in-endometriotic-tissues" class="level3">
+<h3 class="anchored" data-anchor-id="characterizing-subtype-specific-gene-expression-signatures-in-endometriotic-tissues">Characterizing subtype-specific gene expression signatures in endometriotic tissues</h3>
+<p>Author: Jella Freitag (i6368892)</p>
+<p>Project submission of the individual project<br>
+MSB1015 - Scientific Programming<br>
+Submission deadline: 19.10.2025</p>
+</section>
 <section id="setting-up-the-script" class="level2">
 <h2 class="anchored" data-anchor-id="setting-up-the-script">Setting up the script</h2>
 <p>Install packages if needed and load packages</p>
@@ -163,8 +169,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>norm_Pvals <span class="ot">&lt;-</span> Det_p_matrix<span class="sc">/</span>max_p</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 </section>
-<section id="test-different-p-value-thresholds-to-retrieve-amount-of-significant-data." class="level4">
-<h4 class="anchored" data-anchor-id="test-different-p-value-thresholds-to-retrieve-amount-of-significant-data.">Test different p-value thresholds to retrieve amount of significant data.</h4>
+<section id="test-different-p-value-thresholds-to-retrieve-amount-of-significant-data" class="level4">
+<h4 class="anchored" data-anchor-id="test-different-p-value-thresholds-to-retrieve-amount-of-significant-data">Test different p-value thresholds to retrieve amount of significant data</h4>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sigf_thresholds <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="fl">0.2</span>, <span class="fl">0.15</span>, <span class="fl">0.1</span>, <span class="fl">0.08</span>, <span class="fl">0.06</span>, <span class="fl">0.05</span>, <span class="fl">0.01</span>, <span class="fl">0.001</span>)</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>sigf_data <span class="ot">&lt;-</span> <span class="fu">numeric</span>(<span class="fu">length</span>(sigf_thresholds))</span>
@@ -235,7 +241,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code>[1] 0</code></pre>
 </div>
 </div>
-<p>PCA on raw data</p>
+<p>PCA - raw data</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve sample names</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>sample_names <span class="ot">&lt;-</span> <span class="fu">as.character</span>(ExprData[<span class="dv">1</span>,])</span>
@@ -292,7 +298,7 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 </div>
 </div>
 </div>
-<p>Check expression distribution across samples (before processing)</p>
+<p>Check expression distribution across samples (before normalizing)</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(<span class="fu">log2</span>(expr_only <span class="sc">+</span> <span class="dv">1</span>), <span class="at">outline =</span> <span class="cn">FALSE</span>, <span class="at">las =</span> <span class="dv">2</span>, <span class="at">main =</span> <span class="st">"Expression distribution per sample"</span>,</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">"log2(Expression)"</span>, <span class="at">xaxt =</span> <span class="st">"n"</span>, <span class="at">xlab =</span> <span class="st">"samples"</span>, <span class="at">col =</span> <span class="st">"lightblue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -311,7 +317,7 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 <h2 class="anchored" data-anchor-id="data-filtering-for-significance">Data filtering for significance</h2>
 <section id="first-approach" class="level4">
 <h4 class="anchored" data-anchor-id="first-approach">First approach:</h4>
-<p>Detect all p-values smaller 0.05 and filter out corresponding expressetion values.</p>
+<p>Detect all p-values smaller 0.05 and filter out corresponding expression values.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># iterate over</span></span>
 <span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a></span>
@@ -337,28 +343,26 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="co"># expression matrix: ExprData</span></span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Detection score matrix: Det_p_matrix</span></span>
-<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
-<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="co"># function to re-scale p-values into range [0,1]</span></span>
-<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>scale_Pvals <span class="ot">&lt;-</span> <span class="cf">function</span>(ma){</span>
-<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  ma <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ma)</span>
-<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  ma <span class="sc">/</span> <span class="fu">max</span>(ma, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a><span class="co"># re-scale p-Det_p_matrix column-wise to make samples comparable</span></span>
-<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>Det_p_matrix <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Det_p_matrix)</span>
-<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a>p_vals_only <span class="ot">&lt;-</span> Det_p_matrix <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">ncol</span>(.)), <span class="at">.fns =</span> scale_Pvals))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="co"># function to re-scale p-values into range [0,1]</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>scale_Pvals <span class="ot">&lt;-</span> <span class="cf">function</span>(ma){</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>  ma <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(ma)</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>  ma <span class="sc">/</span> <span class="fu">max</span>(ma, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a><span class="co"># re-scale p-Det_p_matrix column-wise to make samples comparable</span></span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a>Det_p_matrix <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(Det_p_matrix)</span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a>p_vals_only <span class="ot">&lt;-</span> Det_p_matrix <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="fu">across</span>(<span class="at">.cols =</span> <span class="fu">seq</span>(<span class="dv">1</span>, <span class="fu">ncol</span>(.)), <span class="at">.fns =</span> scale_Pvals))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Set p-value threshold</p>
+<p>Set p-value threshold of 0.1</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># calculates fraction of significant expression values for each gene and across samples</span></span>
-<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co"># uses p &lt; 0.1</span></span>
-<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>row_fraction <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(p_vals_only <span class="sc">&lt;</span> <span class="fl">0.1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co">#row_fraction</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>row_fraction <span class="ot">&lt;-</span> <span class="fu">rowMeans</span>(p_vals_only <span class="sc">&lt;</span> <span class="fl">0.1</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co">#row_fraction</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Decide for fraction cutoff</p>
+<p>Decide for fraction cutoff of 0.8</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># visual determination of best cutoff choice</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>numb_genes <span class="ot">&lt;-</span> <span class="fu">length</span>(row_fraction)</span>
@@ -412,7 +416,7 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 </section>
 <section id="aggregate-probes" class="level3">
 <h3 class="anchored" data-anchor-id="aggregate-probes">Aggregate probes</h3>
-<p>Probes are multiple expression representations for the same GeneID</p>
+<p>Probes are multiple expression representations for the same GeneID.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="co"># extract vector with GeneIDs</span></span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>ILMN_Gene <span class="ot">&lt;-</span> <span class="fu">row.names</span>(expr_only_norm)</span>
@@ -423,9 +427,10 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 <span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>expr_only_filtered_probes <span class="ot">&lt;-</span> <span class="fu">avereps</span>(expr_only_norm, <span class="at">ID=</span>ILMN_Gene) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>–&gt; leaves 24.20% of the total amount of data.</p>
-<section id="sample-replicates" class="level4">
-<h4 class="anchored" data-anchor-id="sample-replicates">Sample Replicates</h4>
-<p>How similar are the replicates to their original sample.</p>
+</section>
+<section id="sample-replicates" class="level3">
+<h3 class="anchored" data-anchor-id="sample-replicates">Sample Replicates</h3>
+<p>How similar are the replicates to their original sample?</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># retreive sample names + add to filtered matrix</span></span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>sample_names <span class="ot">&lt;-</span> <span class="fu">as.character</span>(ExprData[<span class="dv">1</span>,])</span>
@@ -473,8 +478,8 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 </div>
 <p>The ranges of the Pearson and Spearman correlation coefficients are high enough to justify keeping the replicates and treating them as regular samples. They contribute to biological variance in the data and do not indicate any technical bias.</p>
 </section>
-<section id="plot-expression-distribution-again-after-processing" class="level4">
-<h4 class="anchored" data-anchor-id="plot-expression-distribution-again-after-processing">Plot expression distribution again after processing</h4>
+<section id="plot-expression-distribution-again-after-normalizing" class="level3">
+<h3 class="anchored" data-anchor-id="plot-expression-distribution-again-after-normalizing">Plot expression distribution again after normalizing</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(expr_only_filtered_probes, <span class="at">outline =</span> <span class="cn">FALSE</span>, <span class="at">las =</span> <span class="dv">2</span>, <span class="at">main =</span> <span class="st">"Expression distribution per sample"</span>,</span>
 <span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>        <span class="at">ylab =</span> <span class="st">"log2(Expression)"</span>, <span class="at">xaxt =</span> <span class="st">"n"</span>, <span class="at">xlab =</span> <span class="st">"samples"</span>, <span class="at">col =</span> <span class="st">"lightblue"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
@@ -487,8 +492,8 @@ Levels: DiEIn PE PeLB PeLR PeLW PP SuL</code></pre>
 </div>
 </div>
 </section>
-<section id="class-imbalance" class="level4">
-<h4 class="anchored" data-anchor-id="class-imbalance">Class Imbalance</h4>
+<section id="class-imbalance" class="level3">
+<h3 class="anchored" data-anchor-id="class-imbalance">Class Imbalance</h3>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="co"># retrieve sample names</span></span>
 <span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>subtypes <span class="ot">&lt;-</span> <span class="fu">sub</span>(<span class="st">"SAMPLE </span><span class="sc">\\</span><span class="st">d+</span><span class="sc">\\</span><span class="st">s+"</span>, <span class="st">""</span>, sample_names) </span>
@@ -528,7 +533,6 @@ NonPE    PE
 </div>
 </div>
 </div>
-</section>
 </section>
 </section>
 <section id="analysis" class="level2">
@@ -609,7 +613,7 @@ NonPE    PE
 <span id="cb49-9"><a href="#cb49-9" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">&lt;-</span> <span class="fu">eBayes</span>(fit2)        </span>
 <span id="cb49-10"><a href="#cb49-10" aria-hidden="true" tabindex="-1"></a>deg  <span class="ot">&lt;-</span> <span class="fu">topTable</span>(fit2, <span class="at">adjust.method=</span><span class="st">"BH"</span>, <span class="at">number=</span><span class="cn">Inf</span>)</span>
 <span id="cb49-11"><a href="#cb49-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="co"># sign. DEGs for adj.P.Val &lt; 0.1 und |logFC| &gt; 1</span></span>
+<span id="cb49-12"><a href="#cb49-12" aria-hidden="true" tabindex="-1"></a><span class="co"># sign. DEGs</span></span>
 <span id="cb49-13"><a href="#cb49-13" aria-hidden="true" tabindex="-1"></a>sig_deg <span class="ot">&lt;-</span> deg[deg<span class="sc">$</span>adj.P.Val <span class="sc">&lt;</span> <span class="fl">0.1</span> <span class="sc">&amp;</span> <span class="fu">abs</span>(deg<span class="sc">$</span>logFC) <span class="sc">&gt;</span> <span class="dv">1</span>, ]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div class="cell">
@@ -622,8 +626,10 @@ NonPE    PE
 <span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"Volcano plot of DEGs (PE vs NonPE)"</span>)</span>
 <span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a><span class="co"># significance cutoff lines</span></span>
-<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.1</span>), <span class="at">col =</span> <span class="st">"magenta"</span>, <span class="at">lty =</span> <span class="dv">2</span>)      <span class="co"># horizontal line for adj.P.Val &lt; 0.1</span></span>
-<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">col =</span> <span class="st">"magenta"</span>, <span class="at">lty =</span> <span class="dv">2</span>)   <span class="co"># vertical lines for log2FC thresholds</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="co"># horizontal line for adj. p-values</span></span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">h =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.1</span>), <span class="at">col =</span> <span class="st">"magenta"</span>, <span class="at">lty =</span> <span class="dv">2</span>)</span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a><span class="co"># vertical lines for log2FC thresholds</span></span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a><span class="fu">abline</span>(<span class="at">v =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>), <span class="at">col =</span> <span class="st">"magenta"</span>, <span class="at">lty =</span> <span class="dv">2</span>)   </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -659,6 +665,46 @@ FALSE  TRUE
 <p>The differential expression analysis compared gene expression between PE and NonPE samples. Out of 1,503 genes tested, 121 showed differential expression between the two groups.<br>
 </p>
 <p>Among these, 31 genes were significantly upregulated and 90 were significantly downregulated in PE compared to NonPE.</p>
+</section>
+<section id="pca-of-only-significant-degs" class="level3">
+<h3 class="anchored" data-anchor-id="pca-of-only-significant-degs">PCA of only significant DEGs</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb54"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="co"># sign. genes: sig_deg</span></span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>sig_deg <span class="ot">&lt;-</span> <span class="fu">as.matrix</span>(sig_deg)</span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>expr_for_pca <span class="ot">&lt;-</span> <span class="fu">t</span>(sig_deg) <span class="co"># transposing</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>pca_norm <span class="ot">&lt;-</span> <span class="fu">prcomp</span>(expr_for_pca, <span class="at">center =</span> <span class="cn">TRUE</span>, <span class="at">scale. =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>var_explained <span class="ot">&lt;-</span> <span class="fu">summary</span>(pca_norm)<span class="sc">$</span>importance[<span class="dv">2</span>, <span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>] <span class="sc">*</span> <span class="dv">100</span></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>pc1_var <span class="ot">&lt;-</span> <span class="fu">round</span>(var_explained[<span class="dv">1</span>], <span class="dv">1</span>)</span>
+<span id="cb54-9"><a href="#cb54-9" aria-hidden="true" tabindex="-1"></a>pc2_var <span class="ot">&lt;-</span> <span class="fu">round</span>(var_explained[<span class="dv">2</span>], <span class="dv">1</span>)</span>
+<span id="cb54-10"><a href="#cb54-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-11"><a href="#cb54-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb54-12"><a href="#cb54-12" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_norm<span class="sc">$</span>x[,<span class="dv">1</span>], pca_norm<span class="sc">$</span>x[,<span class="dv">2</span>],</span>
+<span id="cb54-13"><a href="#cb54-13" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="fu">paste0</span>(<span class="st">"PC1 ("</span>, pc1_var, <span class="st">"% variance)"</span>), <span class="at">ylab =</span>  <span class="fu">paste0</span>(<span class="st">"PC2 ("</span>, pc2_var, <span class="st">"% variance)"</span>),</span>
+<span id="cb54-14"><a href="#cb54-14" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"PCA of significant DEGs"</span>, <span class="at">col =</span> point_colors, <span class="at">pch =</span> <span class="dv">20</span>)</span>
+<span id="cb54-15"><a href="#cb54-15" aria-hidden="true" tabindex="-1"></a><span class="fu">legend</span>(<span class="st">"topright"</span>, <span class="at">legend =</span> <span class="fu">names</span>(colors), <span class="at">col =</span> colors, <span class="at">pch =</span> <span class="dv">20</span>, <span class="at">x.intersp =</span> <span class="fl">0.6</span>,</span>
+<span id="cb54-16"><a href="#cb54-16" aria-hidden="true" tabindex="-1"></a>       <span class="at">y.intersp =</span> <span class="fl">0.8</span>, <span class="at">bty =</span> <span class="st">"n"</span>, <span class="at">bg =</span> <span class="st">"transparent"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="One-for-All_files/figure-html/unnamed-chunk-27-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># with jittered points</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(pca_norm<span class="sc">$</span>x[,<span class="dv">1</span>] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(classes2), <span class="dv">0</span>, <span class="fl">0.05</span>), pca_norm<span class="sc">$</span>x[,<span class="dv">2</span>] <span class="sc">+</span> <span class="fu">rnorm</span>(<span class="fu">length</span>(classes2), <span class="dv">0</span>, <span class="fl">0.05</span>),</span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>     <span class="at">xlab =</span> <span class="fu">paste0</span>(<span class="st">"PC1 ("</span>, pc1_var, <span class="st">"% variance)"</span>), <span class="at">ylab =</span>  <span class="fu">paste0</span>(<span class="st">"PC2 ("</span>, pc2_var, <span class="st">"% variance)"</span>),</span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>     <span class="at">main =</span> <span class="st">"PCA of significant DEGs - jittered"</span>, <span class="at">col =</span> point_colors, <span class="at">pch =</span> <span class="dv">19</span>, <span class="at">cex =</span> <span class="fl">1.5</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="One-for-All_files/figure-html/unnamed-chunk-27-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>The jittered PCA plot of the significant genes shows complete overlap between PE and NonPE samples, indicating that the two groups cannot be separated along the main axes of variance. This suggests that the overall expression patterns are highly similar between groups. The variance captured by the PCA is most likely dominated by other factors.</p>
 </section>
 </section>
 

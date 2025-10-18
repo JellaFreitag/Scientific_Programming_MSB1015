@@ -1,9 +1,15 @@
-yaml
-
 ---
-title: "One for all"
+title: "Project_Script_JFreitag"
 format: html
 ---
+
+### Characterizing subtype-specific gene expression signatures in endometriotic tissues
+
+Author: Jella Freitag (i6368892)
+
+Project submission of the individual project\
+MSB1015 - Scientific Programming\
+Submission deadline: 19.10.2025
 
 ## Setting up the script
 
@@ -61,7 +67,7 @@ plot(dens$x, dens$y, type = "l", main = "Density of detection scores", xlab = "D
 norm_Pvals <- Det_p_matrix/max_p
 ```
 
-#### Test different p-value thresholds to retrieve amount of significant data.
+#### Test different p-value thresholds to retrieve amount of significant data
 
 ```{r}
 sigf_thresholds <- c(0.2, 0.15, 0.1, 0.08, 0.06, 0.05, 0.01, 0.001)
@@ -115,7 +121,7 @@ sum(is.na(ExprData)) # for whole matrix
 sum(is.na(expr_only)) # only for expression values
 ```
 
-PCA on raw data
+PCA - raw data
 
 ```{r}
 # retrieve sample names
@@ -153,7 +159,7 @@ hc <- hclust(distMat)
 plot(hc, main="Hierarchical clustering of samples - raw data", sub = "", xlab = "")
 ```
 
-Check expression distribution across samples (before processing)
+Check expression distribution across samples (before normalizing)
 
 ```{r}
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",
@@ -164,7 +170,7 @@ boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distri
 
 #### First approach: 
 
-Detect all p-values smaller 0.05 and filter out corresponding expressetion values.
+Detect all p-values smaller 0.05 and filter out corresponding expression values.
 
 ```{r, eval=FALSE, echo=TRUE, include=TRUE}
 # iterate over
@@ -193,7 +199,6 @@ Check overall significance of genes across all samples. Remove whole rows (genes
 ```{r}
 # expression matrix: ExprData
 # Detection score matrix: Det_p_matrix
-# 
 
 # function to re-scale p-values into range [0,1]
 scale_Pvals <- function(ma){
@@ -208,16 +213,15 @@ Det_p_matrix <- as.data.frame(Det_p_matrix)
 p_vals_only <- Det_p_matrix %>% mutate(across(.cols = seq(1, ncol(.)), .fns = scale_Pvals))
 ```
 
-Set p-value threshold
+Set p-value threshold of 0.1
 
 ```{r}
 # calculates fraction of significant expression values for each gene and across samples
-# uses p < 0.1
 row_fraction <- rowMeans(p_vals_only < 0.1, na.rm = TRUE)
 #row_fraction
 ```
 
-Decide for fraction cutoff
+Decide for fraction cutoff of 0.8
 
 ```{r}
 # visual determination of best cutoff choice
@@ -260,13 +264,11 @@ plot(expr_only_norm)
 hist(expr_only_norm)
     
 par(mfrow=c(1,1))
-  
-
 ```
 
 ### Aggregate probes
 
-Probes are multiple expression representations for the same GeneID
+Probes are multiple expression representations for the same GeneID.
 
 ```{r}
 # extract vector with GeneIDs
@@ -280,9 +282,9 @@ expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene)
 
 --\> leaves 24.20% of the total amount of data.
 
-#### Sample Replicates
+### Sample Replicates
 
-How similar are the replicates to their original sample.
+How similar are the replicates to their original sample?
 
 ```{r}
 # retreive sample names + add to filtered matrix
@@ -315,19 +317,18 @@ hist(cor_spearman, main="Spearman Correlation", xlim=c(0,1), xlab = "Correlation
      col="yellow", breaks=10)
 title("Distribution of correlation coefficients between replicates", outer = TRUE)
 par(mfrow=c(1,1))
-
 ```
 
 The ranges of the Pearson and Spearman correlation coefficients are high enough to justify keeping the replicates and treating them as regular samples. They contribute to biological variance in the data and do not indicate any technical bias.
 
-#### Plot expression distribution again after processing
+### Plot expression distribution again after normalizing
 
 ```{r}
 boxplot(expr_only_filtered_probes, outline = FALSE, las = 2, main = "Expression distribution per sample",
         ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
 ```
 
-#### Class Imbalance
+### Class Imbalance
 
 ```{r}
 # retrieve sample names
@@ -414,7 +415,7 @@ fit2 <- contrasts.fit(fit, cont)
 fit2 <- eBayes(fit2)        
 deg  <- topTable(fit2, adjust.method="BH", number=Inf)
 
-# sign. DEGs for adj.P.Val < 0.1 und |logFC| > 1
+# sign. DEGs
 sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
 ```
 
@@ -428,8 +429,10 @@ plot(deg$logFC, -log10(deg$adj.P.Val),
      main = "Volcano plot of DEGs (PE vs NonPE)")
 
 # significance cutoff lines
-abline(h = -log10(0.1), col = "magenta", lty = 2)      # horizontal line for adj.P.Val < 0.1
-abline(v = c(-1, 1), col = "magenta", lty = 2)   # vertical lines for log2FC thresholds
+# horizontal line for adj. p-values
+abline(h = -log10(0.1), col = "magenta", lty = 2)
+# vertical lines for log2FC thresholds
+abline(v = c(-1, 1), col = "magenta", lty = 2)   
 ```
 
 ```{r}
@@ -457,16 +460,31 @@ The differential expression analysis compared gene expression between PE and Non
 
 Among these, 31 genes were significantly upregulated and 90 were significantly downregulated in PE compared to NonPE.
 
-PCA again
+### PCA of only significant DEGs
 
 ```{r}
-# only use sign. genes: sig_deg
-sign_for_pca <- t(sig_deg) # transposing
-pca_norm <- prcomp(sign_for_pca, center = TRUE, scale. = TRUE)
+# sign. genes: sig_deg
+sig_deg <- as.matrix(sig_deg)
+
+expr_for_pca <- t(sig_deg) # transposing
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
 
 var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
 pc1_var <- round(var_explained[1], 1)
 pc2_var <- round(var_explained[2], 1)
 
-print(paste("PC1:", pc1_var, "%", "PC2:", pc2_var, "%"))
+
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of significant DEGs", col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+
+
+# with jittered points
+plot(pca_norm$x[,1] + rnorm(length(classes2), 0, 0.05), pca_norm$x[,2] + rnorm(length(classes2), 0, 0.05),
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of significant DEGs - jittered", col = point_colors, pch = 19, cex = 1.5)
 ```
+
+The jittered PCA plot of the significant genes shows complete overlap between PE and NonPE samples, indicating that the two groups cannot be separated along the main axes of variance. This suggests that the overall expression patterns are highly similar between groups. The variance captured by the PCA is most likely dominated by other factors.
