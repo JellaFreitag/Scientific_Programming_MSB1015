@@ -1,13 +1,14 @@
 ## About the Project
 This project focuses on gene expression profiling of endometriotic tissues across different subtypes.  
-The research question this project wants to address is: *"Characterizing subtype-specific gene expression signatures in endometriotic tissues."*
+The research question this project aims to address is: *"Characterizing subtype-specific gene expression signatures in endometriotic tissues."*
 
 The workflow includes data loading, data inspection, data filtering, normalization steps, followed by statistical analysis.
 Multiple plots are provided to display data structure and results.
 
 
+
 ## Repository Structure
-**main branch:** contains the finalized and merged script, along with the 'LICENSE' and '.gitignore' files. 
+**main branch:** contains all finalized scripts (1-3), as well as the a merged script, along with the 'LICENSE' and '.gitignore' files. 
 
 **Load_and_process_Script1:** one branch for only the first part of the project (Data loading, inspection etc.)
 
@@ -20,9 +21,18 @@ Multiple plots are provided to display data structure and results.
 **script_crafting branch:** includes most of the R and Quarto scripts, as well as the intermediate commits and updates that were accumulated over the course of the project
 
 
+
 ## About the Data
 The dataset originates from a published study and is based on Illumina HumanHT-12 microarray bulk expression data.  
 It includes multiple metadata variables describing gene characteristics, which were excluded in the beginning of the analysis.
+
+**The dataset**
+- consists of a total number of 47,324 genes and 72 samples
+- represent raw expression values with associated detection scores
+- contains sample replicates and sometimes multiple probes per gene
+- shows class imbalance between endometriotic subtypes
+- does not include healthy control samples
+
 
 **Data source:** 
 [GSE141549 – Gene Expression Omnibus (GEO)](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE141549)  
@@ -35,12 +45,6 @@ Gabriel M., Fey V., Heinosalo T., Adhikari P., Rytkönen K., Komulainen T., Huht
 *A relational database to identify differentially expressed genes in the endometrium and endometriosis lesions.*  
 **Scientific Data**, 7, Article 294. [https://doi.org/10.1038/s41597-020-00623-x](https://doi.org/10.1038/s41597-020-00623-x)
 
-**The dataset**
-- consists of a total number of 47,324 genes and 72 samples
-- represent raw expression values with associated detection scores
-- contains sample replicates and sometimes multiple probes per gene
-- shows class imbalance between endometriotic subtypes
-- does not include healthy control samples
 
 
 ## Requirements/Versions
@@ -50,6 +54,7 @@ Gabriel M., Fey V., Heinosalo T., Adhikari P., Rytkönen K., Komulainen T., Huht
 - **Script format:** Quarto ('.qmd') with HTML output
     (the reposatory also contains helper R scripts, but the final analysis was converted in '.qmd' files)
 - **R packages:** 'readxl', 'tidyverse', 'BiocManager', 'limma', 'stringr'
+
 
 
 ## About the Script
@@ -72,6 +77,7 @@ The workflow is divided into three main sections:
    - PCA on normalized data using new classes
    - Differential Expressed Genes analysis (DEG)
    - PCA on only significant DEGs
+
 
 
 **How to use the script:** Set the working directory to the correct data path, then run the script completely to generate all plots and results.
