@@ -1,0 +1,158 @@
+---
+title: "Script 3: Analysis"
+format: html
+editor: visual
+---
+
+```{r, eval=TRUE, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(limma)
+library(stringr)
+
+# load variables of Script 2
+load_bundle("data/processed/Script2_Filter.rds")
+```
+
+## Analysis
+
+### PCA
+
+```{r}
+# expression matrix: expr_only_filtered_probes
+expr_for_pca <- t(expr_only_filtered_probes) # transposing
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
+
+print(paste("PC1:", pc1_var, "%", "PC2:", pc2_var, "%"))
+```
+
+```{r}
+# for all subtypes
+group_colors <- c("DiEIn" = "red",
+                  "PE"    = "blue",
+                  "PeLB"  = "green",
+                  "PeLR"  = "orange",
+                  "PeLW"  = "purple",
+                  "PP"    = "brown",
+                  "SuL"   = "pink")
+
+point_colors2 <- group_colors[classes]
+
+
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of gene expression in endometriosis subtypes",
+     col = point_colors2, pch = 20)
+
+legend("topright", legend = names(group_colors), col = group_colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+
+
+
+# for PE vs. NonPE
+colors <- c("PE" = "blue", "NonPE" = "green")
+point_colors <- colors[classes2]
+
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of gene expression in endometriosis samples", col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+```
+
+The PCA plots do not show any clear clustering, suggesting that there is little overall variance between the classes.
+
+### Differential Expressed Genes Analysis
+
+```{r}
+# expression matrix: expr_only_filtered_probes
+design <- model.matrix(~0 + classes2)
+colnames(design) <- levels(classes2)
+#design
+
+fit  <- lmFit(expr_only_filtered_probes, design)
+cont <- makeContrasts(PE - NonPE, levels = design)
+fit2 <- contrasts.fit(fit, cont)
+fit2 <- eBayes(fit2)        
+deg  <- topTable(fit2, adjust.method="BH", number=Inf)
+
+# sign. DEGs
+sig_deg <- deg[deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, ]
+```
+
+```{r}
+# visualize DEG: Volcano Plot
+
+plot(deg$logFC, -log10(deg$adj.P.Val),
+     pch = 19, cex = 0.5,
+     col = ifelse(deg$adj.P.Val < 0.1 & abs(deg$logFC) > 1, "blue", "grey"),
+     xlab = "log2 Fold Change", ylab = "-log10 adjusted p-value",
+     main = "Volcano plot of DEGs (PE vs NonPE)")
+
+# significance cutoff lines
+# horizontal line for adj. p-values
+abline(h = -log10(0.1), col = "magenta", lty = 2)
+# vertical lines for log2FC thresholds
+abline(v = c(-1, 1), col = "magenta", lty = 2)
+```
+
+```{r}
+# grey = not significant genes
+# blue = significant genes
+
+# how many genes up- or downregulated in PE compared to NonPE
+table(sig_deg$logFC > 0)
+```
+
+```{r, eval=FALSE, echo=TRUE, include=TRUE}
+# downloading the results
+
+# create matrices
+deg_matrix <- as.matrix(deg) # all genes
+sig_deg_matrix <- as.matrix(sig_deg) #  only significant genes
+
+# create files
+setwd("path")
+write.csv(deg_matrix, "DEG_all_genes.csv")
+write.csv(sig_deg_matrix, "DEG_significant_genes.csv")
+```
+
+The differential expression analysis compared gene expression between PE and NonPE samples. Out of 1,503 genes tested, 121 showed differential expression between the two groups.\
+Among these, 31 genes were significantly upregulated and 90 were significantly downregulated in PE compared to NonPE.
+
+### PCA of only significant DEGs
+
+```{r}
+# sign. genes: sig_deg
+sig_deg <- as.matrix(sig_deg)
+
+expr_for_pca <- t(sig_deg) # transposing
+pca_norm <- prcomp(expr_for_pca, center = TRUE, scale. = TRUE)
+
+var_explained <- summary(pca_norm)$importance[2, 1:2] * 100
+pc1_var <- round(var_explained[1], 1)
+pc2_var <- round(var_explained[2], 1)
+
+
+plot(pca_norm$x[,1], pca_norm$x[,2],
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of significant DEGs", col = point_colors, pch = 20)
+legend("topright", legend = names(colors), col = colors, pch = 20, x.intersp = 0.6,
+       y.intersp = 0.8, bty = "n", bg = "transparent")
+
+
+# with jittered points
+plot(pca_norm$x[,1] + rnorm(length(classes2), 0, 0.05), pca_norm$x[,2] + rnorm(length(classes2), 0, 0.05),
+     xlab = paste0("PC1 (", pc1_var, "% variance)"), ylab =  paste0("PC2 (", pc2_var, "% variance)"),
+     main = "PCA of significant DEGs - jittered", col = point_colors, pch = 19, cex = 1.5)
+```
+
+The jittered PCA plot of the significant genes shows complete overlap between PE and NonPE samples, indicating that the two groups cannot be separated along the main axes of variance. This suggests that the overall expression patterns are highly similar between groups. The variance captured by the PCA is most likely dominated by other factors.
+
+Considerations: The reclassification was applied only to better handle the class imbalance.\
+However, merging all non-PE subtypes into a single class is biologically not plausible, since distinct subgroups of endometriosis manifestations were defined for specific reasons.\
+A larger and more balanced dataset would enable classification based on these pre-defined subtypes, making the analysis biologically more meaningful.
