@@ -133,6 +133,7 @@ subtypes <- sub("\\s+Replicate$", "", subtypes)
 # define 'classes': all subtypes included
 classes <- factor(subtypes)
 classes
+
 group_colors <- c("DiEIn" = "red",
                   "PE"    = "blue",
                   "PeLB"  = "green",
@@ -164,4 +165,12 @@ Check expression distribution across samples (before normalizing)
 ```{r}
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",
         ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
+```
+
+```{r, eval=TRUE, include=FALSE}
+save_bundle("data/processed/Script1_Data.rds",
+            classes = classes,
+            Det_p_matrix =  Det_p_matrix,
+            expr_only = expr_only,
+            ExprData = ExprData)
 ```
