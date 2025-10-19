@@ -7,10 +7,17 @@ Multiple plots are provided to display data structure and results.
 
 
 ## Repository Structure
-**main branch:** contains the finalized and merged script, along with the 'LICENSE' and '.gitignore' files.  
-**script_crafting branch:** includes the most R and Quarto scripts, intermediate commits, and updates.
+**main branch:** contains the finalized and merged script, along with the 'LICENSE' and '.gitignore' files. 
 
-+ more branches!!
+**Load_and_process_Script1:** one branch for only the first part of the project (Data loading, inspection etc.)
+
+**Data_Filter_Script2:** one branch for the second part of the project (Data filtering, probes, class imbalance, replicates)
+
+**Analysis_Script3:** one branch for only the analysis part
+
+**merged_script:** contains a single file that combines all three parts into one script, enabling a more streamlined execution of the entire analysis
+
+**script_crafting branch:** includes most of the R and Quarto scripts, as well as the intermediate commits and updates that were accumulated over the course of the project
 
 
 ## About the Data
@@ -56,7 +63,7 @@ The workflow is divided into three main sections:
 2) **Exploration & Preprocessing**
    - **Detection scores:** inspect density and rescale scores into a 0–1 “p-value range”
    - **Expression values:** quality control by using PCA, hierarchical clustering, and visualization of expression distribution across samples
-   - **Filtering & normalization:** select significant genes, apply log2-transformation and quantile normalization
+   - **Filtering & normalization:** test different p-values and fraction cutoffs, select significant genes, apply log2-transformation and quantile normalization
    - **Probe & replicate handling:** aggregate probes, inspect replicate relationships, re-check expression distributions, visualization of class imbalance
 
 3) **Main Analysis**
