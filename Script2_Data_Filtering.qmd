@@ -1,0 +1,200 @@
+---
+title: "Script 2: Data Filtering"
+format: html
+editor: visual
+---
+
+```{r, eval=TRUE, include=FALSE}
+library(readxl)
+library(tidyverse)
+library(limma)
+library(stringr)
+
+# load variables of Script 1
+load_bundle("data/processed/Script1_Data.rds")
+```
+
+## Data filtering for significance
+
+#### First approach:
+
+Detect all p-values smaller 0.05 and filter out corresponding expression values.
+
+```{r, eval=FALSE, echo=TRUE, include=TRUE}
+# iterate over
+
+# expression data -> odd columns
+# p-values -> even columns
+
+ExprData_filtered <- ExprData_scaled
+
+for (i in seq(1, ncol(ExprData_scaled), by = 2)) { # iterate over all expression columns
+  expression_col <- i
+  p_column <- i+1
+
+  x <- ExprData_scaled[[p_column]] > 0.05 # check if p-value exceeds threshold, gives logic vector
+  ExprData_filtered[[expression_col]][x] <- NA # if yes -> set to 'NA'
+  ExprData_filtered[[p_column]][x] <- NA
+}
+```
+
+--\> Problem: Now, there is a lot of missing values in the matrix, which hinders further processing and analysis.
+
+#### Second approach:
+
+Check overall significance of genes across all samples. Remove whole rows (genes), when fraction is below cutoff.
+
+```{r}
+# expression matrix: ExprData
+# Detection score matrix: Det_p_matrix
+
+# function to re-scale p-values into range [0,1]
+scale_Pvals <- function(ma){
+  
+  ma <- as.numeric(ma)
+  ma / max(ma, na.rm = TRUE)
+  
+}
+
+# re-scale p-Det_p_matrix column-wise to make samples comparable
+Det_p_matrix <- as.data.frame(Det_p_matrix)
+p_vals_only <- Det_p_matrix %>% mutate(across(.cols = seq(1, ncol(.)), .fns = scale_Pvals))
+```
+
+Set p-value threshold of 0.1
+
+```{r}
+# calculates fraction of significant expression values for each gene and across samples
+row_fraction <- rowMeans(p_vals_only < 0.1, na.rm = TRUE)
+#row_fraction
+```
+
+Decide for fraction cutoff of 0.8
+
+```{r}
+# visual determination of best cutoff choice
+numb_genes <- length(row_fraction)
+hist(row_fraction, breaks = 100, col = "orange", main = "Distribution of gene significance using row fraction (p < 0.1)", 
+     ylab = "Number of genes", xlab = "Row fraction")
+
+# Extract the 'good' genes --> 80% significance across samples
+good_genes <- row_fraction >= 0.8
+expr_only_filtered <- expr_only[good_genes,]
+#dim(expr_only_filtered) 
+```
+
+Log2-Transformation and Quantile Normalization
+
+```{r}
+expr_only_log2 <- log2(expr_only_filtered+1)
+expr_only_norm <- normalizeBetweenArrays(expr_only_log2, method = "quantile")
+```
+
+Visualizations
+
+```{r, fig.width=12, fig.height=10, dpi=300}
+par(mfrow=c(4,2))
+
+# non-filtered expression values
+plot(expr_only)
+hist(expr_only)
+
+# filtered expression values
+plot(expr_only_filtered)
+hist(expr_only_filtered)
+
+# log2-transformation
+plot(expr_only_log2)
+hist(expr_only_log2)
+
+# normalization
+plot(expr_only_norm)
+hist(expr_only_norm)
+    
+par(mfrow=c(1,1))
+```
+
+### Aggregate probes
+
+Probes are multiple expression representations for the same GeneID.
+
+```{r}
+# extract vector with GeneIDs
+ILMN_Gene <- row.names(expr_only_norm)
+#table(ILMN_Gene)
+
+# average over replicates
+## limma package, using mean for aggregation
+expr_only_filtered_probes <- avereps(expr_only_norm, ID=ILMN_Gene) 
+```
+
+--\> leaves 24.20% of the total amount of data.
+
+### Sample Replicates
+
+How similar are the replicates to their original sample?
+
+```{r}
+# retreive sample names + add to filtered matrix
+sample_names <- as.character(ExprData[1,])
+sample_names <- sample_names[seq(1, length(sample_names), by = 2)]
+
+colnames(expr_only_filtered_probes) <- sample_names
+
+# retrieve index of replicates + original
+rep_idx <- grep("Replicate", colnames(expr_only_filtered_probes))
+orig_idx <- rep_idx - 1 # original
+
+
+# calulate pearson and spearman correlation
+cor_pearson <- sapply(seq_along(rep_idx), function(i) {
+  cor(expr_only_filtered_probes[, orig_idx[i]], expr_only_filtered_probes[, rep_idx[i]], method = "pearson")
+})
+cor_pearson
+
+cor_spearman <- sapply(seq_along(rep_idx), function(i) {
+  cor(expr_only_filtered_probes[, orig_idx[i]], expr_only_filtered_probes[, rep_idx[i]], method = "spearman")
+})
+cor_spearman
+
+# visualization
+par(mfrow=c(1,2),oma = c(0, 0, 3, 0))  
+hist(cor_pearson, main="Pearson Correlation", xlim=c(0,1), xlab = "Correlation coefficient", ylab = "Number of replicate pairs", 
+     col="skyblue", breaks=10)
+hist(cor_spearman, main="Spearman Correlation", xlim=c(0,1), xlab = "Correlation coefficient", ylab = "", 
+     col="yellow", breaks=10)
+title("Distribution of correlation coefficients between replicates", outer = TRUE)
+par(mfrow=c(1,1))
+```
+
+The ranges of the Pearson and Spearman correlation coefficients are high enough to justify keeping the replicates and treating them as regular samples. They contribute to biological variance in the data and do not indicate any technical bias.
+
+### Plot expression distribution again after normalizing
+
+```{r}
+boxplot(expr_only_filtered_probes, outline = FALSE, las = 2, main = "Expression distribution per sample",
+        ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
+```
+
+### Class Imbalance
+
+```{r}
+# see 'classes': all subtypes
+table(classes)
+
+# all subtype
+barplot(table(classes), col = "purple4", main = "Sample distribution across subtypes", xlab = "Classes", ylab = "Number of samples")
+
+# reclassification in PE vs. the rest (NonPE)
+classes2 <- factor(ifelse(classes == "PE", "PE", "NonPE"))
+table(classes2) 
+
+barplot(table(classes2), col = "purple4", main = "Sample distribution across two classes", xlab = "Classes", ylab = "Number of samples")
+```
+
+```{r, eval=TRUE, include=FALSE}
+save_bundle("data/processed/Script2_Filter.rds",
+            expr_only_filtered_probes = expr_only_filtered_probes,
+            classes =  classes,
+            classes2 = classes2)
+```
