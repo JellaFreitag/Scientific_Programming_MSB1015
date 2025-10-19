@@ -165,3 +165,10 @@ Check expression distribution across samples (before normalizing)
 boxplot(log2(expr_only + 1), outline = FALSE, las = 2, main = "Expression distribution per sample",
         ylab = "log2(Expression)", xaxt = "n", xlab = "samples", col = "lightblue")
 ```
+
+```{r, eval=TRUE, include=FALSE}
+save_bundle("data/processed/Script1_Data.rds",
+            Det_p_matrix = Det_p_matrix,
+            classes =  classes,
+            ExprData = ExprData)
+```
